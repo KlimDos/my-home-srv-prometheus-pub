@@ -1,0 +1,32 @@
+---
+- name: "Download tarball prometheus core"
+  #become: true
+  unarchive:
+      src: https://github.com/prometheus/prometheus/releases/download/v2.7.1/prometheus-2.7.1.linux-amd64.tar.gz # required. If C(remote_src=no) (default), local path to archive file to copy to the target server; can be absolute or relative. If C(remote_src=yes), path on the target server to existing archive file to unpack.,If C(remote_src=yes) and C(src) contains C(://), the remote machine will download the file from the URL first. (version_added 2.0). This is only for simple cases, for full download support use the M(get_url) module.
+      dest: /tmp # required. Remote absolute path where the archive should be unpacked.
+      remote_src: true
+
+- name: "add local node to prometheus.yml"
+  tags: debug
+  blockinfile:
+      path: "/tmp/prometheus-2.7.1.linux-amd64/prometheus.yml" # required. The file to modify.,Before 2.3 this option was only usable as I(dest), I(destfile) and I(name).
+      # not required. The text to insert inside the marker lines. If it's missing or an empty string, the block will be removed as if C(state) were specified to C(absent).
+      insertafter: 'authc:'
+      block: |2
+          - job_name: 'node_exporter'
+            static_configs:
+            - targets: ['localhost:9100'] 
+
+- name: "Download tarball prometheus node exporter"
+  unarchive:
+      src: https://github.com/prometheus/node_exporter/releases/download/v0.17.0/node_exporter-0.17.0.linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: true
+
+- name: "durty run prometheus node"
+  shell: "/tmp/node*/node_exporter </dev/null >/dev/null 2>&1 &"
+  async: 2590000
+  poll: 0
+
+- name: "durty run prometheus binary"
+  shell: "cd /tmp/prom* && nohup /tmp/prometheus*/prometheus </dev/null >/dev/null 2>&1 &"
